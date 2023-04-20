@@ -15,10 +15,10 @@ fi
 # wifi
 if [[ $# -eq 0 ]]; then
   echo "Usage:"
-  echo "  wifi list                           List added WiFi aliases"
-  echo "  wifi add <alias> <SSID> <password>  Add a Wifi alias"
-  echo "  wifi remove <alias>                 Remove a Wifi alias"
-  echo "  wifi <alias>                        Connect to alias network"
+  echo "  wifi list                           List added network aliases"
+  echo "  wifi add <alias> <SSID> <password>  Add a network alias"
+  echo "  wifi remove <alias>                 Remove a network alias"
+  echo "  wifi <alias>                        Connect to an aliased network"
   exit 0
 fi
 
@@ -30,7 +30,7 @@ if [[ $command == "list" ]]; then
   aliases=($(echo "$dumped_keychain" | awk -F'"' '/svce/ { print $4 }'))
   networks=($(echo "$dumped_keychain" | awk -F'"' '/acct/ { print $4 }'))
 
-  echo "Current WiFi aliases:"
+  echo "Current network aliases:"
   for i in "${!aliases[@]}"; do
     echo "  ${aliases[i]} -> ${networks[i]}"
   done
@@ -50,10 +50,10 @@ if [[ $command == "add" ]]; then
   password=${4}
 
   if security add-generic-password -a "$ssid" -D "$kind" -s "$alias" -w "$password" -U "$keychain"; then
-    echo "Added WiFi alias: ${alias} -> ${ssid}"
+    echo "Added network alias: ${alias} -> ${ssid}"
     exit 0;
   else
-    echo "Something went wrong to add WiFi alias: ${alias}"
+    echo "Something went wrong to add network alias: ${alias}"
     exit 1;
   fi
 fi
@@ -68,10 +68,10 @@ if [[ $command == "remove" ]]; then
   alias=${2}
 
   if security delete-generic-password -D "$kind" -s "$alias" "$keychain" >/dev/null 2>&1; then
-    echo "Removed WiFi alias: ${alias}"
+    echo "Removed network alias: ${alias}"
     exit 0;
   else
-    echo "Something went wrong to remove WiFi alias: ${alias}"
+    echo "Something went wrong to remove network alias: ${alias}"
     exit 1;
   fi
 fi

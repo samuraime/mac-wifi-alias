@@ -2,8 +2,8 @@
 
 ## Use cases:
 
-  - Switch network with the same SSID
-  - Switch network quickly in CLI
+  - Switch networks with the same SSID
+  - Connect to network quickly in CLI
 
 ## Install
 
@@ -15,8 +15,8 @@ curl -o- https://raw.githubusercontent.com/samuraime/mac-wifi-alias/main/install
 
 ```
 Usage:
-  wifi list                           List added WiFi aliases
-  wifi add <alias> <SSID> <password>  Add a Wifi alias
-  wifi remove <alias>                 Remove a Wifi alias
-  wifi <alias>                        Connect to alias network
+  wifi list                           List added network aliases
+  wifi add <alias> <SSID> <password>  Add a network alias
+  wifi remove <alias>                 Remove a network alias
+  wifi <alias>                        Connect to an aliased network
 ```
