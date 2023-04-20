@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+keychain="wifi-alias.keychain"
+kind="AirPort network password"
+
+if !(security show-keychain-info "$keychain" >/dev/null 2>&1); then
+  echo "Creating a new keychain to store WiFi password"
+  security create-keychain -P "$keychain"
+  security set-keychain-settings "$keychain"
+  echo "Created keychain ${keychain}"
+fi
+
+# wifi
+if [[ $# -eq 0 ]]; then
+  echo "Usage:"
+  echo "  wifi list                           List added WiFi aliases"
+  echo "  wifi add <alias> <SSID> <password>  Add a Wifi alias"
+  echo "  wifi remove <alias>                 Remove a Wifi alias"
+  echo "  wifi <alias>                        Connect to alias network"
+  exit 0
+fi
+
+command=${1}
+
+if [[ $command == "list" ]]; then
+  dumped_keychain=$(security dump-keychain $keychain)
+
+  aliases=($(echo "$dumped_keychain" | awk -F'"' '/svce/ { print $4 }'))
+  networks=($(echo "$dumped_keychain" | awk -F'"' '/acct/ { print $4 }'))
+
+  echo "Current WiFi aliases:"
+  for i in "${!aliases[@]}"; do
+    echo "  ${aliases[i]} -> ${networks[i]}"
+  done
+
+  exit 0;
+fi
+
+# wifi add <alias> <SSID> <password>
+if [[ $command == "add" ]]; then
+  if [[ $# -ne 4 ]]; then
+    echo "Command: wifi add <alias> <SSID> <password>"
+    exit 1;
+  fi
+
+  alias=${2}
+  ssid=${3}
+  password=${4}
+
+  if security add-generic-password -a "$ssid" -D "$kind" -s "$alias" -w "$password" -U "$keychain"; then
+    echo "Added WiFi alias: ${alias} -> ${ssid}"
+    exit 0;
+  else
+    echo "Something went wrong to add WiFi alias: ${alias}"
+    exit 1;
+  fi
+fi
+
+# wifi remove <alias>
+if [[ $command == "remove" ]]; then
+  if [[ $# -ne 2 ]]; then
+    echo "Command: wifi remove <alias>"
+    exit 1;
+  fi
+
+  alias=${2}
+
+  if security delete-generic-password -D "$kind" -s "$alias" "$keychain" >/dev/null 2>&1; then
+    echo "Removed WiFi alias: ${alias}"
+    exit 0;
+  else
+    echo "Something went wrong to remove WiFi alias: ${alias}"
+    exit 1;
+  fi
+fi
+
+# wifi <alias>
+alias=${1}
+
+ssid=$(security find -s "${alias}" "$keychain" | grep acct | sed -E 's/^.*="(.*)"$/\1/')
+password=$(security find-generic-password -s "${alias}" -w "$keychain")
+
+# Conntect to network
+# networksetup -setairportnetwork <device name> <network> [password]
+networksetup -setairportnetwork en0 "$ssid" "$password"
+
+echo "Connecting to ${ssid}..."
+while ! (
+  (networksetup -getairportnetwork en0 | grep -q "$ssid") && (ipconfig getifaddr en0 >/dev/null 2>&1)
+); do
+    sleep 1
+done
+
+# Current Wi-Fi Network: <network>
+networksetup -getairportnetwork en0
+
+# Current Wi-Fi IP Address
+ip=$(ipconfig getifaddr en0)
+echo "Current Wi-Fi IP Address: $ip"
